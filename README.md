@@ -46,4 +46,4 @@ This project was developed for a high-intensity hackathon, focusing on:
 3.  **Instant Intelligence**: Moving from raw data to visual insight in seconds.
 
 ---
-Developed with ❤️ by Rehan Mohammad.
+Developed with ❤️ by team titan
