@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus BI | Conversational AI Dashboard</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- PapaParse for CSV parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Outfit', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0fdfa',
+                            100: '#ccfbf1',
+                            500: '#14b8a6', // Teal
+                            600: '#0d9488',
+                            900: '#134e4a',
+                        },
+                        accent: {
+                            500: '#8b5cf6', // Violet
+                            600: '#7c3aed',
+                        },
+                        surface: {
+                            50: '#f8fafc',
+                            800: '#1e293b',
+                            900: '#0f172a',
+                            950: '#020617',
+                        }
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                        'glow': 'glow 2s ease-in-out infinite alternate',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        },
+                        glow: {
+                            '0%': { boxShadow: '0 0 5px rgba(139, 92, 246, 0.2)' },
+                            '100%': { boxShadow: '0 0 20px rgba(139, 92, 246, 0.6), 0 0 40px rgba(20, 184, 166, 0.4)' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-surface-950 text-slate-200 font-sans h-screen w-full overflow-hidden flex selection:bg-accent-500/30">
+
+    <!-- Background Effects (Global) -->
+    <div class="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+        <div class="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-accent-600/10 blur-[120px] animate-pulse-slow"></div>
+        <div class="absolute top-[60%] -right-[10%] w-[40%] h-[60%] rounded-full bg-brand-600/10 blur-[120px] animate-pulse-slow" style="animation-delay: 1s;"></div>
+    </div>
+
+    <!-- ======================= LOGIN SCREEN ======================= -->
+    <div id="login-app" class="absolute inset-0 z-50 flex items-center justify-center overflow-hidden transition-opacity duration-700 bg-surface-950/80 backdrop-blur-sm">
+        <!-- Floating Bubbles Background -->
+        <div class="bubbles">
+            <div class="bubble"></div>
+            <div class="bubble"></div>
+            <div class="bubble"></div>
+            <div class="bubble"></div>
+            <div class="bubble"></div>
+            <div class="bubble"></div>
+            <div class="bubble"></div>
+        </div>
+
+        <div class="relative z-10 w-full max-w-md p-8 bg-surface-900/60 backdrop-blur-xl border border-white/10 rounded-3xl shadow-[0_0_50px_rgba(20,184,166,0.15)] overflow-hidden scale-100 transition-transform duration-700">
+            <!-- Glow effect behind form -->
+            <div class="absolute -top-1/2 -left-1/2 w-full h-full bg-brand-500/20 blur-[100px] rounded-full mix-blend-screen pointer-events-none"></div>
+            
+            <div class="text-center mb-8 relative">
+                <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-accent-500 to-brand-500 flex items-center justify-center shadow-[0_0_20px_rgba(139,92,246,0.6)] animate-float">
+                    <i class="ph-bold ph-chart-line-up text-white text-3xl"></i>
+                </div>
+                <h1 class="font-display font-bold text-3xl tracking-tight text-white mb-2">Nexus<span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-accent-400">BI</span></h1>
+                <p class="text-sm text-slate-400">Sign in to your intelligent data copilot</p>
+            </div>
+
+            <form id="login-form" class="space-y-5 relative">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2" for="email">Work Email</label>
+                    <div class="relative group">
+                        <i class="ph ph-envelope-simple absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-400 transition-colors"></i>
+                        <input type="email" id="email" class="w-full bg-surface-950/50 border border-white/10 rounded-xl py-3 pl-11 pr-4 text-slate-200 focus:outline-none focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/50 transition-all placeholder:text-slate-600" placeholder="admin@nexus.ai" value="admin@nexus.ai" required>
+                    </div>
+                </div>
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider" for="password">Password</label>
+                        <a href="#" class="text-xs text-brand-400 hover:text-brand-300 transition-colors">Forgot?</a>
+                    </div>
+                    <div class="relative group">
+                        <i class="ph ph-lock-key absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-400 transition-colors"></i>
+                        <input type="password" id="password" class="w-full bg-surface-950/50 border border-white/10 rounded-xl py-3 pl-11 pr-11 text-slate-200 focus:outline-none focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/50 transition-all placeholder:text-slate-600" placeholder="••••••••" value="password" required>
+                        <button type="button" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors">
+                            <i class="ph ph-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <button type="submit" id="login-submit-btn" class="w-full relative group overflow-hidden rounded-xl pt-2 pb-2 mt-4">
+                    <span class="absolute inset-0 bg-gradient-to-r from-brand-600 via-accent-600 to-brand-600 rounded-xl bg-[length:200%_auto] animate-[gradient_2s_linear_infinite] group-hover:scale-[1.02] transition-transform"></span>
+                    <div class="relative flex items-center justify-center gap-2 py-3">
+                        <span class="font-semibold text-white tracking-wide">Enter Dashboard</span>
+                        <i class="ph-bold ph-arrow-right text-white"></i>
+                    </div>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ======================= MAIN DASHBOARD APP ======================= -->
+    <div id="dashboard-app" class="h-full w-full flex opacity-0 hidden transition-opacity duration-700">
+        <!-- Sidebar -->
+        <aside class="w-72 h-full border-r border-white/5 bg-surface-900/50 backdrop-blur-xl flex flex-col z-10 hidden md:flex shrink-0 transition-all duration-300">
+            <!-- Logo Area -->
+            <div class="p-6 flex items-center gap-3 border-b border-white/5">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-500 to-brand-500 flex items-center justify-center shadow-[0_0_15px_rgba(139,92,246,0.5)]">
+                    <i class="ph-bold ph-chart-line-up text-white text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-display font-bold text-xl tracking-tight text-white">Nexus<span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-accent-400">BI</span></h1>
+                    <p class="text-xs text-slate-400 font-medium tracking-wider uppercase">Copilot</p>
+                </div>
+            </div>
+
+            <!-- New Chat Button -->
+            <div class="p-4">
+                <button onclick="clearChat()" class="w-full relative group overflow-hidden rounded-xl p-[1px]">
+                    <span class="absolute inset-0 bg-gradient-to-r from-accent-500 via-brand-500 to-accent-500 rounded-xl opacity-70 group-hover:opacity-100 transition-opacity duration-300 bg-[length:200%_auto] animate-[gradient_2s_linear_infinite]"></span>
+                    <div class="relative bg-surface-900 px-4 py-3 rounded-xl flex items-center justify-center gap-2 transition-all duration-300 group-hover:bg-surface-800/80">
+                        <i class="ph ph-plus text-lg text-white"></i>
+                        <span class="font-medium text-white text-sm">New Dashboard</span>
+                    </div>
+                </button>
+            </div>
+
+            <!-- Data Sources -->
+            <div class="px-4 py-2">
+                <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 px-2">Data Sources</h3>
+                <div class="space-y-1" id="data-sources-list">
+                    <!-- Default mock source -->
+                    <button id="default-source-btn" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors text-left group border border-emerald-500/20 bg-emerald-500/5">
+                        <div class="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 group-hover:bg-emerald-500/20 transition-colors">
+                            <i class="ph ph-file-csv text-emerald-400"></i>
+                        </div>
+                        <div class="flex-1 overflow-hidden">
+                            <p class="text-sm font-medium text-slate-200 truncate">customer_behavior.csv</p>
+                            <p class="text-xs text-slate-400">Sample Dataset</p>
+                        </div>
+                        <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+                    </button>
+                    
+                    <!-- Area for newly uploaded sources -->
+                </div>
+                
+                <button id="sidebar-upload-btn" class="w-full mt-3 flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-dashed border-white/20 text-slate-400 hover:text-white hover:border-white/40 hover:bg-white/5 transition-all text-sm font-medium">
+                    <i class="ph ph-upload-simple"></i> Upload New CSV
+                </button>
+                <input type="file" id="csv-file-input" accept=".csv" class="hidden">
+            </div>
+
+            <div class="flex-1 overflow-y-auto custom-scrollbar px-4 py-2 mt-2 border-t border-white/5">
+                <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 px-2 pt-4">Recent Inquiries</h3>
+                <div class="space-y-1" id="history-container">
+                        <!-- History items will be populated here -->
+                        <button class="w-full text-left px-3 py-2 text-sm text-slate-400 hover:text-slate-200 hover:bg-white/5 rounded-lg truncate transition-colors">Age Demographics</button>
+                        <button class="w-full text-left px-3 py-2 text-sm text-slate-400 hover:text-slate-200 hover:bg-white/5 rounded-lg truncate transition-colors">Online vs Store Spend</button>
+                        <button class="w-full text-left px-3 py-2 text-sm text-slate-400 hover:text-slate-200 hover:bg-white/5 rounded-lg truncate transition-colors">Brand loyalty by city tier</button>
+                </div>
+            </div>
+
+            <!-- User Profile -->
+            <div class="p-4 border-t border-white/5">
+                <button class="w-full flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-white/5 transition-colors">
+                    <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-slate-600 to-slate-400 flex items-center justify-center flex-shrink-0 relative overflow-hidden">
+                        <img src="https://ui-avatars.com/api/?name=Admin+User&background=random" alt="User" class="w-full h-full object-cover">
+                    </div>
+                    <div class="text-left flex-1">
+                        <p class="text-sm font-medium text-white">Admin User</p>
+                        <p class="text-xs text-brand-400">Authenticated</p>
+                    </div>
+                    <!-- Logout button hidden but available -->
+                    <i id="logout-btn" class="ph ph-sign-out py-2 px-1 text-slate-400 hover:text-red-400 transition-colors" title="Logout"></i>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col h-full relative z-10 w-full">
+            <!-- Header -->
+            <header class="h-16 border-b border-white/5 bg-surface-900/40 backdrop-blur-md flex items-center justify-between px-6 flex-shrink-0 z-20">
+                <div class="flex items-center gap-3">
+                    <button class="md:hidden text-slate-400 hover:text-white transition-colors">
+                        <i class="ph ph-list text-2xl"></i>
+                    </button>
+                    <div class="flex items-center gap-2" id="api-status">
+                        <span class="w-2 h-2 rounded-full bg-slate-500"></span>
+                        <span class="text-sm font-medium text-slate-400">API Disconnected</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <button class="text-slate-400 hover:text-white transition-colors" title="Export Dashboard">
+                        <i class="ph ph-export text-xl"></i>
+                    </button>
+                    <button class="text-slate-400 hover:text-white transition-colors" title="Share Insights">
+                        <i class="ph ph-share-network text-xl"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Chat Area -->
+            <div class="flex-1 overflow-y-auto custom-scrollbar p-6 scroll-smooth" id="chat-container">
+                <!-- Welcome Screen (Hidden when chat starts) -->
+                <div id="welcome-screen" class="h-full flex flex-col items-center justify-center max-w-3xl mx-auto text-center opacity-100 transition-opacity duration-500">
+                    <div class="w-20 h-20 rounded-2xl bg-gradient-to-br from-surface-800 to-surface-900 border border-white/10 flex items-center justify-center mb-6 shadow-2xl relative group animate-float">
+                        <div class="absolute inset-0 bg-gradient-to-tr from-brand-500/20 to-accent-500/20 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-500"></div>
+                        <i class="ph-duotone ph-sparkle text-4xl text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-accent-400 relative z-10"></i>
+                    </div>
+                    <h2 class="font-display font-bold text-4xl text-white mb-4 tracking-tight">How can I help you analyze today?</h2>
+                    <p class="text-slate-400 mb-10 max-w-lg text-lg">Ask me anything about your connected data sources. I can generate instant charts, metrics, and actionable insights.</p>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-2xl px-4">
+                        <button class="suggestion-btn flex flex-col text-left p-4 rounded-xl border border-white/5 bg-surface-800/30 hover:bg-surface-800/80 hover:border-brand-500/30 transition-all group backdrop-blur-sm">
+                            <span class="text-brand-400 font-medium text-sm mb-1 group-hover:text-brand-300 transition-colors flex items-center gap-2"><i class="ph-fill ph-users"></i> Demographics</span>
+                            <span class="text-slate-300 text-sm">"Show me the customer age demographics"</span>
+                        </button>
+                        <button class="suggestion-btn flex flex-col text-left p-4 rounded-xl border border-white/5 bg-surface-800/30 hover:bg-surface-800/80 hover:border-accent-500/30 transition-all group backdrop-blur-sm">
+                            <span class="text-accent-400 font-medium text-sm mb-1 group-hover:text-accent-300 transition-colors flex items-center gap-2"><i class="ph-fill ph-shopping-cart"></i> Spend Channels</span>
+                            <span class="text-slate-300 text-sm">"Compare average online vs store spend"</span>
+                        </button>
+                        <button class="suggestion-btn flex flex-col text-left p-4 rounded-xl border border-white/5 bg-surface-800/30 hover:bg-surface-800/80 hover:border-blue-500/30 transition-all group backdrop-blur-sm">
+                            <span class="text-blue-400 font-medium text-sm mb-1 group-hover:text-blue-300 transition-colors flex items-center gap-2"><i class="ph-fill ph-heart"></i> Loyalty Insights</span>
+                            <span class="text-slate-300 text-sm">"Analyze brand loyalty by city tier"</span>
+                        </button>
+                        <button class="suggestion-btn flex flex-col text-left p-4 rounded-xl border border-white/5 bg-surface-800/30 hover:bg-surface-800/80 hover:border-orange-500/30 transition-all group backdrop-blur-sm">
+                            <span class="text-orange-400 font-medium text-sm mb-1 group-hover:text-orange-300 transition-colors flex items-center gap-2"><i class="ph-fill ph-warning-circle"></i> Anomalies</span>
+                            <span class="text-slate-300 text-sm">"Identify any drops in revenue across product lines"</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input Area -->
+            <div class="px-6 pb-6 pt-2 bg-gradient-to-t from-surface-950 via-surface-950 to-transparent w-full">
+                <div class="max-w-4xl mx-auto relative group">
+                    <div class="absolute -inset-[1px] bg-gradient-to-r from-brand-500/50 via-accent-500/50 to-brand-500/50 rounded-2xl blur opacity-20 group-focus-within:opacity-60 transition duration-500"></div>
+                    
+                    <div class="relative bg-surface-900 border border-white/10 rounded-2xl shadow-xl flex flex-col overflow-hidden backdrop-blur-xl transition-all duration-300 group-focus-within:border-white/20">
+                        <textarea 
+                            id="user-input"
+                            rows="1" 
+                            class="w-full bg-transparent text-slate-200 p-4 pl-5 max-h-32 min-h-[56px] focus:outline-none resize-none custom-scrollbar placeholder-slate-500 leading-relaxed font-sans"
+                            placeholder="Ask about your data..."
+                        ></textarea>
+                        
+                        <div class="flex items-center justify-between px-3 pb-3 pt-1">
+                            <div class="flex items-center gap-1">
+                                <button onclick="document.getElementById('csv-file-input').click()" class="p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors group relative" title="Upload CSV File">
+                                    <i class="ph ph-paperclip text-xl"></i>
+                                    <span class="absolute -top-8 left-1/2 -translate-x-1/2 bg-surface-800 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">Upload CSV</span>
+                                </button>
+                                <button class="p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors" title="Voice Input">
+                                    <i class="ph ph-microphone text-xl"></i>
+                                </button>
+                                <span class="mx-2 w-[1px] h-4 bg-white/10"></span>
+                                <span class="text-xs text-slate-500 font-medium px-2 py-1 bg-white/5 rounded-md flex items-center gap-1">
+                                    <i class="ph-fill ph-magic-wand text-brand-400"></i> Auto Chart Selection
+                                </span>
+                            </div>
+                            
+                            <button id="send-btn" class="bg-white text-surface-950 hover:bg-brand-50 px-4 py-2 rounded-xl font-semibold flex items-center gap-2 transition-all duration-300 shadow-[0_0_15px_rgba(255,255,255,0.1)] hover:shadow-[0_0_20px_rgba(255,255,255,0.2)] disabled:opacity-50 disabled:cursor-not-allowed">
+                                <span>Analyze</span>
+                                <i class="ph-bold ph-paper-plane-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="text-center mt-2">
+                        <p class="text-[10px] text-slate-500">Nexus BI can make mistakes. Verify critical data insights.</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Templates for JS Injection -->
+    <template id="user-msg-template">
+        <div class="flex justify-end mb-8 animate-[slideInRight_0.3s_ease-out]">
+            <div class="max-w-[80%] md:max-w-[70%] flex gap-4">
+                <div class="bg-surface-800 border border-white/5 rounded-2xl rounded-tr-sm px-5 py-3.5 shadow-lg text-slate-200">
+                    <p class="content leading-relaxed"></p>
+                </div>
+                <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-slate-600 to-slate-400 flex items-center justify-center flex-shrink-0 mt-1 shadow-md overflow-hidden">
+                    <img src="https://ui-avatars.com/api/?name=Admin+User&background=random" alt="User" class="w-full h-full object-cover">
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="ai-msg-template">
+        <div class="flex justify-start mb-8 animate-[slideInLeft_0.3s_ease-out]">
+            <div class="max-w-[90%] md:max-w-[85%] flex gap-4">
+                <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-brand-500 to-accent-500 flex items-center justify-center flex-shrink-0 mt-1 shadow-[0_0_10px_rgba(20,184,166,0.3)] border border-white/20">
+                    <i class="ph-bold ph-sparkle text-white text-sm"></i>
+                </div>
+                <div class="bg-surface-900/50 backdrop-blur-md border border-brand-500/20 rounded-2xl rounded-tl-sm shadow-xl flex flex-col overflow-hidden group w-full max-w-2xl">
+                    <!-- Typing Indicator / Process Header -->
+                    <div class="px-5 py-2 border-b border-white/5 bg-white/5 flex items-center gap-2 text-xs font-medium text-brand-300 uppercase tracking-wider">
+                        <i class="ph ph-database"></i> Querying Dataset via API...
+                    </div>
+                    
+                    <div class="p-5 flex flex-col gap-4">
+                        <div class="text-slate-200 leading-relaxed content prose prose-invert overflow-hidden">
+                            <!-- Text content injected here -->
+                        </div>
+                        
+                        <!-- Chart Container (Optional) -->
+                        <div class="chart-wrapper hidden w-full rounded-xl bg-surface-950/80 border border-white/5 p-4 mt-2 shadow-inner relative">
+                            <!-- Canvas injected here -->
+                            <div class="absolute top-4 right-4 flex gap-2">
+                                <button class="p-1.5 rounded-md bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-colors" title="Download Chart">
+                                    <i class="ph ph-download-simple"></i>
+                                </button>
+                                <button class="p-1.5 rounded-md bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-colors" title="Expand">
+                                    <i class="ph ph-arrows-out"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="flex gap-2 mt-2 pt-3 border-t border-white/5 action-buttons hidden">
+                            <button class="text-xs px-3 py-1.5 rounded-lg bg-surface-800 border border-white/10 text-slate-300 hover:bg-white/10 transition-colors action-btn-1">View Raw Data</button>
+                            <button class="text-xs px-3 py-1.5 rounded-lg bg-surface-800 border border-white/10 text-slate-300 hover:bg-white/10 transition-colors action-btn-2">Add to Dashboard</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <script src="script.js"></script>
+</body>
+</html>
